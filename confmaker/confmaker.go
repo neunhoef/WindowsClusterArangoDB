@@ -7,13 +7,38 @@ import (
 )
 
 var ipAddresses = []string{
-  "192.168.173.95",
-  "192.168.173.224",
-  "192.168.173.221",
+	"10.192.43.36",
+	"10.192.43.39",
+	"10.192.43.41",
+	"10.192.43.38",
+	"10.192.43.42",
 }
 
-var installationDir = "c:/Users/jenkins/ArangoDB/"
-var executable = `C:/Program Files/ArangoDB3e 3.1.2/usr/bin/arangod.exe`
+var dbserverNames = []string{
+	"dbserver4",
+	"dbserver3",
+	"dbserver1",
+	"dbserver5",
+	"dbserver2",
+}
+
+var coordinatorNames = []string{
+	"coordinator4",
+	"coordinator3",
+	"coordinator1",
+	"coordinator5",
+	"coordinator2",
+}
+
+var agentNames = []string{
+	"agent0",
+	"agent1",
+	"agent2",
+}
+
+var installationDir = "E:/arangodb/"
+var configDir = "D:/arangodb/configuration/"
+var executable = `D:/arangodb/ArangoDB3e 3.1.2/usr/bin/arangod.exe`
 
 var agentSkeleton = `# ArangoDB configuration file
 
@@ -79,7 +104,7 @@ agency-endpoint = %s
 
 func agentConfigs() {
 	for i := 0; i < 3; i++ {
-		name := "agent" + strconv.Itoa(i)
+		name := agentNames[i]
 		out, _ := os.Create(name + ".conf")
 		fmt.Fprintf(out, agentSkeleton, installationDir + name, 4001,
 		            installationDir + name + "-apps",
@@ -94,7 +119,7 @@ func agentConfigs() {
 
 func dbserverConfigs() {
 	for i := 0; i < len(ipAddresses); i++ {
-		name := "dbserver" + strconv.Itoa(i)
+		name := dbserverNames[i]
 		out, _ := os.Create(name + ".conf")
 		fmt.Fprintf(out, serverSkeleton, installationDir + name, 8629,
 		            installationDir + name + "-apps",
@@ -110,7 +135,7 @@ func dbserverConfigs() {
 
 func coordinatorConfigs() {
 	for i := 0; i < len(ipAddresses); i++ {
-		name := "coordinator" + strconv.Itoa(i)
+		name := coordinatorNames[i]
 		out, _ := os.Create(name + ".conf")
 		fmt.Fprintf(out, serverSkeleton, installationDir + name, 8530,
 		            installationDir + name + "-apps",
@@ -130,10 +155,17 @@ func makeBatFiles(typ string) {
 		nr = 3
 	}
 	for i := 0; i < nr; i++ {
-		name := typ + strconv.Itoa(i)
+		var name string
+		if typ == "agent" {
+			name = agentNames[i]
+		} else if typ == "dbserver" {
+			name = dbserverNames[i]
+		} else if typ == "coordinator" {
+			name = coordinatorNames[i]
+		}
 		out, _ := os.Create(name + ".bat")
 		fmt.Fprintf(out, "\"%s\" --configuration %s\n", executable,
-		            installationDir + name + ".conf")
+		            configDir + name + ".conf")
 		out.Chmod(0755)
 		out.Close()
 	}
@@ -143,19 +175,19 @@ func serviceCreateBat() {
 	for i := 0; i < len(ipAddresses); i++ {
 		out, _ := os.Create("createServices" + strconv.Itoa(i) + ".bat")
 		if i < 3 {
-			fmt.Fprintf(out, `sc create ArangoDBAgent type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %sagent%d.conf"`,
-			            executable, installationDir, i)
-			fmt.Fprintf(out, "\r\nsc description ArangoDBAgent ArangoDBAgent%d\r\n",
-			            i)
+			fmt.Fprintf(out, `sc create ArangoDB%s type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %s%s.conf"`,
+			            agentNames[i], executable, configDir, agentNames[i])
+			fmt.Fprintf(out, "\r\nsc description ArangoDB%s ArangoDB%s\r\n",
+			            agentNames[i], agentNames[i])
 		}
-		fmt.Fprintf(out, `sc create ArangoDBCoordinator type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %scoordinator%d.conf"`,
-								executable, installationDir, i)
-		fmt.Fprintf(out, "\r\nsc description ArangoDBCoordinator ArangoDBCoordinator%d\r\n",
-								i)
-		fmt.Fprintf(out, `sc create ArangoDBDBserver type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %sdbserver%d.conf"`,
-								executable, installationDir, i)
-		fmt.Fprintf(out, "\r\nsc description ArangoDBDBserver ArangoDBDBserver%d\r\n",
-								i)
+		fmt.Fprintf(out, `sc create ArangoDB%s type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %s%s.conf"`,
+								coordinatorNames[i], executable, configDir, coordinatorNames[i])
+		fmt.Fprintf(out, "\r\nsc description ArangoDB%s ArangoDB%s\r\n",
+								coordinatorNames[i], coordinatorNames[i])
+		fmt.Fprintf(out, `sc create ArangoDB%s type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %s%s.conf"`,
+								dbserverNames[i], executable, installationDir, dbserverNames[i])
+		fmt.Fprintf(out, "\r\nsc description ArangoDB%s ArangoDB%s\r\n",
+								dbserverNames[i], dbserverNames[i])
 		out.Chmod(0755)
 		out.Close()
   }
@@ -165,10 +197,10 @@ func serviceDeleteBat() {
 	for i := 0; i < len(ipAddresses); i++ {
 		out, _ := os.Create("deleteServices" + strconv.Itoa(i) + ".bat")
 		if i < 3 {
-			fmt.Fprintf(out, "sc delete ArangoDBAgent%d\r\n", i)
+			fmt.Fprintf(out, "sc delete ArangoDB%s\r\n", agentNames[i])
 		}
-	  fmt.Fprintf(out, "sc delete ArangoDBCoordinator%d\r\n", i)
-	  fmt.Fprintf(out, "sc delete ArangoDBDBserver%d\r\n", i)
+	  fmt.Fprintf(out, "sc delete ArangoDB%s\r\n", coordinatorNames[i])
+	  fmt.Fprintf(out, "sc delete ArangoDB%s\r\n", dbserverNames[i])
 		out.Chmod(0755)
 		out.Close()
   }
