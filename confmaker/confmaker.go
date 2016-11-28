@@ -38,7 +38,7 @@ var agentNames = []string{
 
 var installationDir = "E:/arangodb/"
 var configDir = "D:/arangodb/configuration/"
-var executable = `D:/arangodb/ArangoDB3e 3.1.2/usr/bin/arangod.exe`
+var executable = `D:/arangodb/ArangoDB3e 3.1.2-1_win64/usr/bin/arangod.exe`
 
 var agentSkeleton = `# ArangoDB configuration file
 
