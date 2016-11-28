@@ -1,7 +1,7 @@
 package main
 
 import (
-  "fmt"
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -106,12 +106,12 @@ func agentConfigs() {
 	for i := 0; i < 3; i++ {
 		name := agentNames[i]
 		out, _ := os.Create(name + ".conf")
-		fmt.Fprintf(out, agentSkeleton, installationDir + name, 4001,
-		            installationDir + name + "-apps",
-								installationDir + name + ".log",
-								"tcp://" + ipAddresses[i] + ":4001")
+		fmt.Fprintf(out, agentSkeleton, installationDir+name, 4001,
+			installationDir+name+"-apps",
+			installationDir+name+".log",
+			"tcp://"+ipAddresses[i]+":4001")
 		for j := 0; j < i; j++ {
-			fmt.Fprintf(out, "endpoint = %s\n", "tcp://" + ipAddresses[j] + ":4001")
+			fmt.Fprintf(out, "endpoint = %s\n", "tcp://"+ipAddresses[j]+":4001")
 		}
 		out.Close()
 	}
@@ -121,14 +121,14 @@ func dbserverConfigs() {
 	for i := 0; i < len(ipAddresses); i++ {
 		name := dbserverNames[i]
 		out, _ := os.Create(name + ".conf")
-		fmt.Fprintf(out, serverSkeleton, installationDir + name, 8629,
-		            installationDir + name + "-apps",
-								installationDir + name + ".log",
-								"tcp://" + ipAddresses[i] + ":8629",
-								ipAddresses[i] + ":8629", "PRIMARY",
-								"tcp://" + ipAddresses[0] + ":4001",
-								"tcp://" + ipAddresses[1] + ":4001",
-								"tcp://" + ipAddresses[2] + ":4001")
+		fmt.Fprintf(out, serverSkeleton, installationDir+name, 8629,
+			installationDir+name+"-apps",
+			installationDir+name+".log",
+			"tcp://"+ipAddresses[i]+":8629",
+			ipAddresses[i]+":8629", "PRIMARY",
+			"tcp://"+ipAddresses[0]+":4001",
+			"tcp://"+ipAddresses[1]+":4001",
+			"tcp://"+ipAddresses[2]+":4001")
 		out.Close()
 	}
 }
@@ -137,14 +137,14 @@ func coordinatorConfigs() {
 	for i := 0; i < len(ipAddresses); i++ {
 		name := coordinatorNames[i]
 		out, _ := os.Create(name + ".conf")
-		fmt.Fprintf(out, serverSkeleton, installationDir + name, 8530,
-		            installationDir + name + "-apps",
-								installationDir + name + ".log",
-								"tcp://" + ipAddresses[i] + ":8530",
-								ipAddresses[i] + ":8530", "COORDINATOR",
-								"tcp://" + ipAddresses[0] + ":4001",
-								"tcp://" + ipAddresses[1] + ":4001",
-								"tcp://" + ipAddresses[2] + ":4001")
+		fmt.Fprintf(out, serverSkeleton, installationDir+name, 8530,
+			installationDir+name+"-apps",
+			installationDir+name+".log",
+			"tcp://"+ipAddresses[i]+":8530",
+			ipAddresses[i]+":8530", "COORDINATOR",
+			"tcp://"+ipAddresses[0]+":4001",
+			"tcp://"+ipAddresses[1]+":4001",
+			"tcp://"+ipAddresses[2]+":4001")
 		out.Close()
 	}
 }
@@ -165,7 +165,7 @@ func makeBatFiles(typ string) {
 		}
 		out, _ := os.Create(name + ".bat")
 		fmt.Fprintf(out, "\"%s\" --configuration %s\n", executable,
-		            configDir + name + ".conf")
+			configDir+name+".conf")
 		out.Chmod(0755)
 		out.Close()
 	}
@@ -176,21 +176,21 @@ func serviceCreateBat() {
 		out, _ := os.Create("createServices" + strconv.Itoa(i) + ".bat")
 		if i < 3 {
 			fmt.Fprintf(out, `sc create ArangoDB%s type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %s%s.conf"`,
-			            agentNames[i], executable, configDir, agentNames[i])
+				agentNames[i], executable, configDir, agentNames[i])
 			fmt.Fprintf(out, "\r\nsc description ArangoDB%s ArangoDB%s\r\n",
-			            agentNames[i], agentNames[i])
+				agentNames[i], agentNames[i])
 		}
 		fmt.Fprintf(out, `sc create ArangoDB%s type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %s%s.conf"`,
-								coordinatorNames[i], executable, configDir, coordinatorNames[i])
+			coordinatorNames[i], executable, configDir, coordinatorNames[i])
 		fmt.Fprintf(out, "\r\nsc description ArangoDB%s ArangoDB%s\r\n",
-								coordinatorNames[i], coordinatorNames[i])
+			coordinatorNames[i], coordinatorNames[i])
 		fmt.Fprintf(out, `sc create ArangoDB%s type=own start=auto error=normal binPath="\"%s\" --start-service true --configuration %s%s.conf"`,
-								dbserverNames[i], executable, installationDir, dbserverNames[i])
+			dbserverNames[i], executable, installationDir, dbserverNames[i])
 		fmt.Fprintf(out, "\r\nsc description ArangoDB%s ArangoDB%s\r\n",
-								dbserverNames[i], dbserverNames[i])
+			dbserverNames[i], dbserverNames[i])
 		out.Chmod(0755)
 		out.Close()
-  }
+	}
 }
 
 func serviceDeleteBat() {
@@ -199,20 +199,20 @@ func serviceDeleteBat() {
 		if i < 3 {
 			fmt.Fprintf(out, "sc delete ArangoDB%s\r\n", agentNames[i])
 		}
-	  fmt.Fprintf(out, "sc delete ArangoDB%s\r\n", coordinatorNames[i])
-	  fmt.Fprintf(out, "sc delete ArangoDB%s\r\n", dbserverNames[i])
+		fmt.Fprintf(out, "sc delete ArangoDB%s\r\n", coordinatorNames[i])
+		fmt.Fprintf(out, "sc delete ArangoDB%s\r\n", dbserverNames[i])
 		out.Chmod(0755)
 		out.Close()
-  }
+	}
 }
 
 func main() {
-  agentConfigs()
-  makeBatFiles("agent")
-  dbserverConfigs()
-  makeBatFiles("dbserver")
-  coordinatorConfigs()
-  makeBatFiles("coordinator")
-  serviceCreateBat()
-  serviceDeleteBat()
+	agentConfigs()
+	makeBatFiles("agent")
+	dbserverConfigs()
+	makeBatFiles("dbserver")
+	coordinatorConfigs()
+	makeBatFiles("coordinator")
+	serviceCreateBat()
+	serviceDeleteBat()
 }
