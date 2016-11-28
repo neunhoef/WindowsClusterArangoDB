@@ -141,7 +141,7 @@ func coordinatorConfigs() {
 		            installationDir + name + "-apps",
 								installationDir + name + ".log",
 								"tcp://" + ipAddresses[i] + ":8530",
-								ipAddresses[i] + ":8629", "COORDINATOR",
+								ipAddresses[i] + ":8530", "COORDINATOR",
 								"tcp://" + ipAddresses[0] + ":4001",
 								"tcp://" + ipAddresses[1] + ":4001",
 								"tcp://" + ipAddresses[2] + ":4001")
